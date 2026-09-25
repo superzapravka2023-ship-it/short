@@ -1,11 +1,30 @@
+import logging
+import os
 import sqlite3
 import threading
 import time
 
 import config as C
 
+log = logging.getLogger("storage")
 _lock = threading.Lock()
-_conn = sqlite3.connect(C.DB_PATH, check_same_thread=False)
+
+
+def _connect(path: str):
+    folder = os.path.dirname(os.path.abspath(path))
+    os.makedirs(folder, exist_ok=True)
+    return sqlite3.connect(path, check_same_thread=False)
+
+
+try:
+    _conn = _connect(C.DB_PATH)
+except (sqlite3.OperationalError, OSError) as e:
+    log.warning("БД по пути %s недоступна (%s). "
+                "Подключи Volume с mount path /data — иначе статистика теряется "
+                "при каждом редеплое. Временно пишу в ./bot.db", C.DB_PATH, e)
+    C.DB_PATH = "bot.db"
+    _conn = _connect(C.DB_PATH)
+
 _conn.row_factory = sqlite3.Row
 
 SCHEMA = """
