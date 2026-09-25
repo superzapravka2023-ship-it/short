@@ -133,3 +133,27 @@ def stats(days=30):
         "wins": len(wins), "losses": len(losses), "expired": len(exp),
         "winrate": wr, "avg_best": avg_best, "avg_worst": avg_worst,
     }
+
+
+# ---- списки для интерфейса ----
+def recent_signals(limit=10):
+    return _q("SELECT * FROM signals ORDER BY ts DESC LIMIT ?", (limit,), fetch="all")
+
+
+def signals_today():
+    since = int(time.time()) - 86400
+    r = _q("SELECT COUNT(*) c FROM signals WHERE ts>=?", (since,), fetch="one")
+    return r["c"] if r else 0
+
+
+def muted_list():
+    now = int(time.time())
+    return _q("SELECT symbol, until FROM mutes WHERE until>? ORDER BY until", (now,), fetch="all")
+
+
+def unmute(symbol):
+    _q("DELETE FROM mutes WHERE symbol=?", (symbol,))
+
+
+def reset_settings():
+    _q("DELETE FROM settings")
